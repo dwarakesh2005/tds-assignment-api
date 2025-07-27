@@ -5,20 +5,6 @@ from utils.file_parser import handle_file_question
 
 app = FastAPI()
 
-@app.get("/")
-async def root():
-    return {
-        "message": "✅ TDS Assignment API is running.",
-        "usage": {
-            "endpoint": "/api/",
-            "method": "POST",
-            "fields": {
-                "question": "string (required)",
-                "file": "UploadFile (.pdf, .txt, optional)"
-            }
-        }
-    }
-
 @app.post("/api/")
 async def solve_question(question: str = Form(...), file: UploadFile = File(None)):
     try:

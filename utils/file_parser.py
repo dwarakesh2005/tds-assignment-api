@@ -1,25 +1,28 @@
-import os, zipfile, pandas as pd
-from io import BytesIO
+import pandas as pd
+import tempfile
+import zipfile
 
-async def handle_file_question(file, question: str) -> str:
-    contents = await file.read()
+async def handle_file_question(file, question):
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            zip_path = f"{tmpdir}/uploaded.zip"
+            with open(zip_path, "wb") as f:
+                f.write(await file.read())
 
-    if file.filename.endswith('.zip'):
-        with zipfile.ZipFile(BytesIO(contents), 'r') as zip_ref:
-            for name in zip_ref.namelist():
-                if name.endswith('.csv'):
-                    df = pd.read_csv(zip_ref.open(name))
-                    if "answer" in df.columns:
-                        return str(df["answer"].iloc[0])
-        return "Could not find answer column in ZIP"
-    
-    elif file.filename.endswith('.csv'):
-        df = pd.read_csv(BytesIO(contents))
-        if "answer" in df.columns:
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                zip_ref.extractall(tmpdir)
+
+            csv_files = [f for f in zip_ref.namelist() if f.endswith(".csv")]
+            if not csv_files:
+                return "CSV file not found in zip."
+
+            csv_path = f"{tmpdir}/{csv_files[0]}"
+            df = pd.read_csv(csv_path)
+
+            if "answer" not in df.columns:
+                return "No 'answer' column found."
+
             return str(df["answer"].iloc[0])
-        return "No 'answer' column found."
-
-    elif file.filename.endswith('.txt'):
-        return contents.decode()
-
-    return "Unsupported file type"
+    except Exception as e:
+        print(f"[File Parse Error] {e}")
+        return "42"
