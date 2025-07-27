@@ -3,3 +3,4 @@ uvicorn[standard]>=0.20
 pandas
 openai
 python-multipart
+openai==0.28
